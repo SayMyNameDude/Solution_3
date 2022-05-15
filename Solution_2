@@ -1,0 +1,131 @@
+# импорт бибилиотек
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+%matplotlib inline
+
+# Визуализация зависимостей данных
+
+
+df = pd.read_csv('C1_result.csv')
+df.head()
+
+
+df.info()
+
+Преобразуем тип данных столбца category_travel_time для дальнейшего обучения модели/
+
+
+df['category_travel_time'] = df['category_travel_time'].astype('category')
+
+
+## Корреляция
+
+
+#  тепловая матрица корреляции
+plt.figure(figsize=(15, 10))
+
+sns.heatmap(df.corr(), annot=True)
+
+
+Удаление колинеарных признаков
+
+
+df.drop(['maximum temperature','minimum temperature'], axis=1, inplace=True)
+
+
+## Графики зависимостей аттрибутов на целевую переменную
+
+
+sns.countplot(x='passenger_count', data = df, hue = 'category_travel_time')
+
+
+#ещё график // у меня не получилось построить
+#%config InlineBackend.figure_format = 'png'
+#sns.pairplot(df, hue="category_travel_time")
+
+
+# Разбиение набора данных
+
+
+df = df.drop(['pickup_datetime', 'pickup_latitude','pickup_longitude', 'dropoff_longitude','dropoff_latitude'], axis = 1)
+
+
+X = df.drop(['category_travel_time'], axis = 1)
+y = df['category_travel_time']
+
+from sklearn.model_selection import train_test_split
+
+Разделим данные на тестовые и обучающую выборки, в соотношении 80 на 20, так как это самый популярный метод деления.
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
+
+# Классификация исходных компетенций
+
+
+Были выбраны 3 метода, такие как: Логистическая Регрессия, k Ближайших Соседей и множество деревьев. Эти методы были выбраны, так как они относятся к числу распространенных методов решения задачи классификации.
+
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+
+lr = LogisticRegression()
+
+knn = KNeighborsClassifier(n_neighbors=5)
+
+rfc = RandomForestClassifier()
+
+# Обучение моделей
+
+Обучим выбранные модели, затем оценим их качество и выберем лучшую.
+
+%%time
+lr.fit(X_train, y_train)
+
+%%time
+knn.fit(X_train, y_train)
+
+
+%%time
+rfc.fit(X_train, y_train)
+
+
+Прогнозирование
+
+
+lr_pred = lr.predict(X_test)
+
+knn_pred = knn.predict(X_test)
+
+rfc_pred = rfc.predict(X_test)
+
+# Оценка качества моделей
+
+Для оценки качества модели выберем метрики: аккуратность и отчёт классификации
+
+#загрузка метрик
+from sklearn.metrics import classification_report
+from sklearn.metrics import accuracy_score
+
+
+Отчёт о классификации
+
+
+print(classification_report(y_test, lr_pred))
+
+print(classification_report(y_test, knn_pred))
+
+print(classification_report(y_test, rfc_pred))
+
+
+Две модели показали одниаковую точность, поэтому оценим точность отдельно
+
+print(accuracy_score(lr_pred, y_test))
+
+print(accuracy_score(knn_pred, y_test))
+
+print(accuracy_score(rfc_pred, y_test))
+
+Наилучшее качество показала модель RandomForestClassifier
