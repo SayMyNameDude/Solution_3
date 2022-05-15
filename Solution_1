@@ -1,0 +1,238 @@
+# Подготовка обучающей выборки
+
+## Подключение бибилиотек
+
+
+# импорт бибилиотек
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+%matplotlib inline
+
+
+## Загрузка данных по перевозкам
+
+first_part = pd.read_excel('data/train_first_part.xlsx')
+
+
+second_part = pd.read_json('data/train_second_part.json')
+
+
+## объединение данных по перевозкам
+
+first_part.head()
+
+second_part.head()
+
+
+После загрузки данных мы видим, что наборы имеют одинаковые столбцы, поэтому объединим их в один датафрейм и удалим неинформативный признак id , потому что он не несет в себе смысловой нагрузки, и также очистим данные от дубликатов
+
+df = pd.concat([first_part, second_part]).drop_duplicates('id').drop('id', axis=1)
+df
+
+
+ для удобства работы переведем сразу временные признаки в datetime тип
+
+
+ df['pickup_datetime'] = pd.to_datetime(df['pickup_datetime'])
+df['dropoff_datetime'] = pd.to_datetime(df['dropoff_datetime'])
+df
+
+
+df.info()
+
+
+vendor_id - идентификатор провайдера;
+pickup_datetime - дата и время включения счетчика;
+dropoff_datetime - дата и время отключения счетчика;
+passenger_count - число пассажиров в машине;
+pickup_longitude - долгота точки, где был включен счетчик;
+pickup_latitude - широта точки, где был включен счетчик;
+dropoff_longitude - долгота точки, где был выключен счетчик;
+dropoff_latitude - широта точки, где был выключен счетчик;
+store_and_fwd_flag - этот флаг показывает была ли задержка в передачи данных о поездке вендору: Y - задержка передачи данных ведору была, N - задержки не было.
+
+
+
+
+#  Форматирование данных
+
+## Осмотр данных на пропуски
+
+
+Проверим наши данные по перевозкам на пропуски
+
+sns.heatmap(df.isna())
+Как видно по графику, то пропуски не наблюдаются
+
+## Осмотр данных на выбросы
+
+df.info()
+
+ из таблици выше видно, что все данные в нужных форматах, поэтому далее осмотр выбросов будет произведен командой describe
+
+
+ df.describe()
+
+
+ По descibe наблюдается сильный разброс в длительности поездки, но время .возможно указано в секундах, если это так, то переведем его в минуты и еще раз посмотрим на describe
+
+
+df.head()
+
+
+Действительно длтельность указана в секунда, потому что разница по времени в первой строчке равна 7 минут и 35 секунд, если перевести это в секунды то тоже получится 455. Поэтому переведем секунды в минуты
+
+# перевод секунд в минуты 
+df.trip_duration = df.trip_duration.apply(lambda x: x/60)
+
+Теперь еще раз осмотрим на выбросы
+
+df.describe()
+
+
+Да, выбросы есть в длительности, для проверки построим боксплот
+
+
+sns.boxplot(df['trip_duration'])
+
+
+Попробуем циклом взять квантили и построить боксплоты и посмотреть где выбросов не станет
+
+
+### Очистка выбросов
+
+
+qunt = df['trip_duration'].quantile(0.92)
+df = df[df['trip_duration'] < qunt]
+sns.boxplot(df['trip_duration'])
+plt.show()
+
+
+при квантилии в 0.92 выбросы пропали, поэтому возьмем этот квантиль
+
+
+
+## Факторизация
+
+т.к. наш набор содержит строковый столбец, а модели умеют работать только с числами, то факторизуем такой столбец(т.е. поменяем значение N например на 0, а значение Y на 1)
+
+
+df['store_and_fwd_flag'] = pd.factorize(df['store_and_fwd_flag'])[0]
+
+
+# Дополнение набора данных
+## Загрузка погодных данных
+
+weather = pd.read_csv('data/weather.csv')
+
+
+## Форматирование погодных данных
+
+
+### Осмотр и обработка пропусков
+
+weather.isna().sum()
+
+Пропусков в погодных данных также нет
+
+
+###  Инфо о погодных данных
+
+
+weather.info()
+
+
+
+Наблюдается интересное. Три столбца(с 4 по 6 включительно) должны быть типа int или float, но они типа object, что показывает, что там есть значения не только исловые, посмотрим что это за значения и замених их например на 0
+
+
+for col in ['precipitation', 'snow fall', 'snow depth']:
+    print(weather[col].unique())
+    print('-' * 10)
+
+
+В данном случае у нас непонятное значение T, поэтому заменим его например на 0 и приведем наши данные в тип float
+
+
+for col in ['precipitation', 'snow fall', 'snow depth']:
+    weather.loc[weather[col] == 'T', col] = 0
+    weather[col] = weather[col].astype(np.float64)
+
+
+### Осмотр на выбросы и обработка
+
+weather.describe()
+Видно, что а нас есть температура свыше 80 градусов. Такого в цельсиях быть не может на улице, значит температура указана в фаренгейтах. Поэтому переведем ее и посмотрим на descibe еще раз
+
+
+for temp in ['maximum temperature', 'minimum temperature','average temperature']:
+    weather[temp] = weather[temp].apply(lambda x: (x-32)/1.8)
+
+
+weather.describe()
+
+
+Теперь все температуры в рамках допустимого и поэтому выбросов не наблюдается
+
+
+##Объединение набора данных о поездках и о погоде
+
+т.к. у нас в данных о поездках нету столбца date, мы добавим его временно, данные и годе, месяце и т.д. возьмем из даты посадки. После объединения удалим столбец date и столбец с датой высадки, потому что нам надо предсказывать длительность, а не высчитывать.
+
+
+
+df['date'] = df['pickup_datetime'].apply(lambda x: str(x.day) + '-' + str(x.month) + '-' + str(x.year))
+df = df.merge(weather, on='date').drop(['date'], axis=1)
+df
+
+
+### Добавление временных признаков
+
+df['year'] = df['dropoff_datetime'].apply(lambda x: x.year)
+df['month'] = df['dropoff_datetime'].apply(lambda x: x.month)
+df['day'] = df['dropoff_datetime'].apply(lambda x: x.day)
+df['hour'] = df['dropoff_datetime'].apply(lambda x: x.hour)
+df
+
+
+Мы добавили столбцы год, месяц, день и час в данные, т.к. модель не умеет принимать и обрабатывать даты. Если простым языком, то мы просто разбили по столбцам столбец dropoff_datetime, а столбец dropoff_datetime можно удалить
+
+
+
+df.drop('dropoff_datetime', axis=1, inplace=True)
+
+
+df['category_travel_time']=df['trip_duration']
+df.info()
+
+
+
+q1=df.category_travel_time.quantile(0.25)
+q2=df.category_travel_time.quantile(0.5)
+q3=df.category_travel_time.quantile(0.75)
+
+df.category_travel_time=np.where((df.category_travel_time<=q1),1,df.category_travel_time)
+df.category_travel_time=np.where(((df.category_travel_time<q2)&(df.category_travel_time>q1)),2,df.category_travel_time)
+df.category_travel_time=np.where(((df.category_travel_time<q3)&(df.category_travel_time>=q2)),3,df.category_travel_time)
+df.category_travel_time=np.where((df.category_travel_time>=q3),4,df.category_travel_time)
+
+df.drop('trip_duration', axis=1, inplace=True)
+df.info()
+
+
+# Сохранение данных и вывод о проделанной работе
+
+
+# сохраняет в директорию, где лежит Report_C1.ipynb
+df.to_csv('C1_result.csv', index=False)
+
+
+Вывод: во время первой сессии были сделаны следующие вещи:
+
+обработаны пропуски во всех данных
+обработаны выбросы во всех данных
+данные приведены к приемлимому виду(отформатированы)
+объединены данные о всех поездках и о погоде в эти дни в один датасет и сохранены с расширением .csv
