@@ -29,20 +29,12 @@ second_part.head()
 
 После загрузки данных мы видим, что наборы имеют одинаковые столбцы, поэтому объединим их в один датафрейм и удалим неинформативный признак id , потому что он не несет в себе смысловой нагрузки, и также очистим данные от дубликатов
 
-df = pd.concat([first_part, second_part]).drop_duplicates('id').drop('id', axis=1)
-df
+My_Data_Frame = pd.concat([first_part, second_part]).drop_duplicates('id').drop('id', axis=1)
+My_Data_Frame
 
+просмотрим ссотвествуют ли столбцы своим типам данных
 
- для удобства работы переведем сразу временные признаки в datetime тип
-
-
- df['pickup_datetime'] = pd.to_datetime(df['pickup_datetime'])
-df['dropoff_datetime'] = pd.to_datetime(df['dropoff_datetime'])
-df
-
-
-df.info()
-
+My_Data_Frame.info()
 
 vendor_id - идентификатор провайдера;
 pickup_datetime - дата и время включения счетчика;
@@ -54,7 +46,13 @@ dropoff_longitude - долгота точки, где был выключен с
 dropoff_latitude - широта точки, где был выключен счетчик;
 store_and_fwd_flag - этот флаг показывает была ли задержка в передачи данных о поездке вендору: Y - задержка передачи данных ведору была, N - задержки не было.
 
+как видим в столбце с датотой стоит тип object, поэтому исправляем это и для  для удобства работы переведем сразу временные признаки в datetime тип
 
+
+
+ My_Data_Frame['pickup_datetime'] = pd.to_datetime(My_Data_Frame['pickup_datetime'])
+My_Data_Frame['dropoff_datetime'] = pd.to_datetime(My_Data_Frame['dropoff_datetime'])
+My_Data_Frame
 
 
 #  Форматирование данных
@@ -64,39 +62,39 @@ store_and_fwd_flag - этот флаг показывает была ли зад
 
 Проверим наши данные по перевозкам на пропуски
 
-sns.heatmap(df.isna())
+sns.heatmap(My_Data_Frame.isna())
 Как видно по графику, то пропуски не наблюдаются
 
 ## Осмотр данных на выбросы
 
-df.info()
+My_Data_Frame.info()
 
  из таблици выше видно, что все данные в нужных форматах, поэтому далее осмотр выбросов будет произведен командой describe
 
 
- df.describe()
+ My_Data_Frame.describe()
 
 
  По descibe наблюдается сильный разброс в длительности поездки, но время .возможно указано в секундах, если это так, то переведем его в минуты и еще раз посмотрим на describe
 
 
-df.head()
+My_Data_Frame.head()
 
 
 Действительно длтельность указана в секунда, потому что разница по времени в первой строчке равна 7 минут и 35 секунд, если перевести это в секунды то тоже получится 455. Поэтому переведем секунды в минуты
 
 # перевод секунд в минуты 
-df.trip_duration = df.trip_duration.apply(lambda x: x/60)
+My_Data_Frame.trip_duration = My_Data_Frame.trip_duration.apply(lambda x: x/60)
 
 Теперь еще раз осмотрим на выбросы
 
-df.describe()
+My_Data_Frame.describe()
 
 
 Да, выбросы есть в длительности, для проверки построим боксплот
 
 
-sns.boxplot(df['trip_duration'])
+sns.boxplot(My_Data_Frame['trip_duration'])
 
 
 Попробуем циклом взять квантили и построить боксплоты и посмотреть где выбросов не станет
@@ -105,9 +103,9 @@ sns.boxplot(df['trip_duration'])
 ### Очистка выбросов
 
 
-qunt = df['trip_duration'].quantile(0.92)
-df = df[df['trip_duration'] < qunt]
-sns.boxplot(df['trip_duration'])
+qunt = My_Data_Frame['trip_duration'].quantile(0.92)
+My_Data_Frame = My_Data_Frame[My_Data_Frame['trip_duration'] < qunt]
+sns.boxplot(My_Data_Frame['trip_duration'])
 plt.show()
 
 
@@ -120,7 +118,7 @@ plt.show()
 т.к. наш набор содержит строковый столбец, а модели умеют работать только с числами, то факторизуем такой столбец(т.е. поменяем значение N например на 0, а значение Y на 1)
 
 
-df['store_and_fwd_flag'] = pd.factorize(df['store_and_fwd_flag'])[0]
+My_Data_Frame['store_and_fwd_flag'] = pd.factorize(My_Data_Frame['store_and_fwd_flag'])[0]
 
 
 # Дополнение набора данных
@@ -175,64 +173,64 @@ for temp in ['maximum temperature', 'minimum temperature','average temperature']
 weather.describe()
 
 
-Теперь все температуры в рамках допустимого и поэтому выбросов не наблюдается
+Сейчас мы видим, что температуры в рамках допустимого и выбросов не наблюдается
 
 
 ##Объединение набора данных о поездках и о погоде
 
-т.к. у нас в данных о поездках нету столбца date, мы добавим его временно, данные и годе, месяце и т.д. возьмем из даты посадки. После объединения удалим столбец date и столбец с датой высадки, потому что нам надо предсказывать длительность, а не высчитывать.
+Поскльку в данных о поездках нет столбца date, добавим его временно, данные и годе, месяце и т.д. возьмем из даты посадки. После объединения удалим столбец date и столбец с датой высадки, потому что нам надо предсказывать длительность, а не высчитывать.
 
 
 
-df['date'] = df['pickup_datetime'].apply(lambda x: str(x.day) + '-' + str(x.month) + '-' + str(x.year))
-df = df.merge(weather, on='date').drop(['date'], axis=1)
-df
+My_Data_Frame['date'] = My_Data_Frame['pickup_datetime'].apply(lambda x: str(x.day) + '-' + str(x.month) + '-' + str(x.year))
+My_Data_Frame = My_Data_Frame.merge(weather, on='date').drop(['date'], axis=1)
+My_Data_Frame
 
 
 ### Добавление временных признаков
 
-df['year'] = df['dropoff_datetime'].apply(lambda x: x.year)
-df['month'] = df['dropoff_datetime'].apply(lambda x: x.month)
-df['day'] = df['dropoff_datetime'].apply(lambda x: x.day)
-df['hour'] = df['dropoff_datetime'].apply(lambda x: x.hour)
-df
+My_Data_Frame['year'] = My_Data_Frame['dropoff_datetime'].apply(lambda x: x.year)
+My_Data_Frame['month'] = My_Data_Frame['dropoff_datetime'].apply(lambda x: x.month)
+My_Data_Frame['day'] = My_Data_Frame['dropoff_datetime'].apply(lambda x: x.day)
+My_Data_Frame['hour'] = My_Data_Frame['dropoff_datetime'].apply(lambda x: x.hour)
+My_Data_Frame
 
 
 Мы добавили столбцы год, месяц, день и час в данные, т.к. модель не умеет принимать и обрабатывать даты. Если простым языком, то мы просто разбили по столбцам столбец dropoff_datetime, а столбец dropoff_datetime можно удалить
 
 
 
-df.drop('dropoff_datetime', axis=1, inplace=True)
+My_Data_Frame.drop('dropoff_datetime', axis=1, inplace=True)
 
 
-df['category_travel_time']=df['trip_duration']
-df.info()
+My_Data_Frame['category_travel_time']=My_Data_Frame['trip_duration']
+My_Data_Frame.info()
 
 
 
-q1=df.category_travel_time.quantile(0.25)
-q2=df.category_travel_time.quantile(0.5)
-q3=df.category_travel_time.quantile(0.75)
+q1=My_Data_Frame.category_travel_time.quantile(0.25)
+q2=My_Data_Frame.category_travel_time.quantile(0.5)
+q3=My_Data_Frame.category_travel_time.quantile(0.75)
 
-df.category_travel_time=np.where((df.category_travel_time<=q1),1,df.category_travel_time)
-df.category_travel_time=np.where(((df.category_travel_time<q2)&(df.category_travel_time>q1)),2,df.category_travel_time)
-df.category_travel_time=np.where(((df.category_travel_time<q3)&(df.category_travel_time>=q2)),3,df.category_travel_time)
-df.category_travel_time=np.where((df.category_travel_time>=q3),4,df.category_travel_time)
+My_Data_Frame.category_travel_time=np.where((My_Data_Frame.category_travel_time<=q1),1,My_Data_Frame.category_travel_time)
+My_Data_Frame.category_travel_time=np.where(((My_Data_Frame.category_travel_time<q2)&(My_Data_Frame.category_travel_time>q1)),2,My_Data_Frame.category_travel_time)
+My_Data_Frame.category_travel_time=np.where(((My_Data_Frame.category_travel_time<q3)&(My_Data_Frame.category_travel_time>=q2)),3,My_Data_Frame.category_travel_time)
+My_Data_Frame.category_travel_time=np.where((My_Data_Frame.category_travel_time>=q3),4,My_Data_Frame.category_travel_time)
 
-df.drop('trip_duration', axis=1, inplace=True)
-df.info()
+My_Data_Frame.drop('trip_duration', axis=1, inplace=True)
+My_Data_Frame.info()
 
 
 # Сохранение данных и вывод о проделанной работе
 
 
 # сохраняет в директорию, где лежит Report_C1.ipynb
-df.to_csv('C1_result.csv', index=False)
+My_Data_Frame.to_csv('C1_result.csv', index=False)
 
 
-Вывод: во время первой сессии были сделаны следующие вещи:
+Вывод: во время первой сессии была проведена работа с данными и было проделано следующее:
 
 обработаны пропуски во всех данных
-обработаны выбросы во всех данных
-данные приведены к приемлимому виду(отформатированы)
-объединены данные о всех поездках и о погоде в эти дни в один датасет и сохранены с расширением .csv
+обработаны выбросы данных
+данные отформатированы и приведены к приемлимому виду
+данные о всех поездках и о погоде в эти дни были объеденены в один датасет и сохранены в расширении .csv
