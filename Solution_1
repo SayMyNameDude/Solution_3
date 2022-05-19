@@ -198,8 +198,6 @@ My_Data_Frame
 
 Мы добавили столбцы год, месяц, день и час в данные, т.к. модель не умеет принимать и обрабатывать даты. Если простым языком, то мы просто разбили по столбцам столбец dropoff_datetime, а столбец dropoff_datetime можно удалить
 
-
-
 My_Data_Frame.drop('dropoff_datetime', axis=1, inplace=True)
 
 
@@ -207,7 +205,7 @@ My_Data_Frame['category_travel_time']=My_Data_Frame['trip_duration']
 My_Data_Frame.info()
 
 
-
+#HERE IS ONE BIG STRING. FROM HERE
 q1=My_Data_Frame.category_travel_time.quantile(0.25)
 q2=My_Data_Frame.category_travel_time.quantile(0.5)
 q3=My_Data_Frame.category_travel_time.quantile(0.75)
@@ -219,7 +217,7 @@ My_Data_Frame.category_travel_time=np.where((My_Data_Frame.category_travel_time>
 
 My_Data_Frame.drop('trip_duration', axis=1, inplace=True)
 My_Data_Frame.info()
-
+#TO HERE
 
 # Сохранение данных и вывод о проделанной работе
 
