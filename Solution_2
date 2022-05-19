@@ -6,8 +6,7 @@ import matplotlib.pyplot as plt
 
 %matplotlib inline
 
-# Визуализация зависимостей данных
-
+# Визуализация зависимостей данных /MARKDOWN
 
 df = pd.read_csv('C1_result.csv')
 df.head()
@@ -15,16 +14,16 @@ df.head()
 
 df.info()
 
-Преобразуем тип данных столбца category_travel_time для дальнейшего обучения модели/
+Преобразуем тип данных столбца category_travel_time для дальнейшего обучения модели
 
 
 df['category_travel_time'] = df['category_travel_time'].astype('category')
 
 
-## Корреляция
+## Корреляция /MARKDOWN
 
 
-#  тепловая матрица корреляции
+#тепловая матрица корреляции
 plt.figure(figsize=(15, 10))
 
 sns.heatmap(df.corr(), annot=True)
@@ -32,11 +31,10 @@ sns.heatmap(df.corr(), annot=True)
 
 Удаление колинеарных признаков
 
-
 df.drop(['maximum temperature','minimum temperature'], axis=1, inplace=True)
 
 
-## Графики зависимостей аттрибутов на целевую переменную
+## Графики зависимостей аттрибутов на целевую переменную /MARKDOWN
 
 
 sns.countplot(x='passenger_count', data = df, hue = 'category_travel_time')
@@ -47,7 +45,7 @@ sns.countplot(x='passenger_count', data = df, hue = 'category_travel_time')
 #sns.pairplot(df, hue="category_travel_time")
 
 
-# Разбиение набора данных
+# Разбиение набора данных /MARKDOWN
 
 
 df = df.drop(['pickup_datetime', 'pickup_latitude','pickup_longitude', 'dropoff_longitude','dropoff_latitude'], axis = 1)
@@ -62,7 +60,7 @@ from sklearn.model_selection import train_test_split
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
 
-# Классификация исходных компетенций
+# Классификация исходных компетенций /MARKDOWN
 
 
 Были выбраны 3 метода, такие как: Логистическая Регрессия, k Ближайших Соседей и множество деревьев. Эти методы были выбраны, так как они относятся к числу распространенных методов решения задачи классификации.
@@ -77,7 +75,7 @@ knn = KNeighborsClassifier(n_neighbors=5)
 
 rfc = RandomForestClassifier()
 
-# Обучение моделей
+# Обучение моделей /MARKDOWN
 
 Обучим выбранные модели, затем оценим их качество и выберем лучшую.
 
@@ -101,7 +99,7 @@ knn_pred = knn.predict(X_test)
 
 rfc_pred = rfc.predict(X_test)
 
-# Оценка качества моделей
+# Оценка качества моделей /MARKDOWN
 
 Для оценки качества модели выберем метрики: аккуратность и отчёт классификации
 
@@ -128,4 +126,11 @@ print(accuracy_score(knn_pred, y_test))
 
 print(accuracy_score(rfc_pred, y_test))
 
+ВЫВОД:
 Наилучшее качество показала модель RandomForestClassifier
+
+ОТЧЕТ (FROM COVID WORK'S)
+2.1 Разбиение набора данных - набор данныхз разбит на обучаюшую и тестовую выборки
+2.3 Классификация - выбраны 3 алгоритма классификации
+2.4 Обучение - произведена классификация по уровню опасности
+My_Data_Frame.to_csv('C2_result.csv', index=False)
